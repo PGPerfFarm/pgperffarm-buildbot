@@ -1,0 +1,10 @@
+*.sw?
+*.pyc
+
+state.sqlite
+
+# buildbot
+http.log
+settings.py
+twistd.log
+twistd.pid
