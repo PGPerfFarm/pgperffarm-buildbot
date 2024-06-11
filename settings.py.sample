@@ -1,0 +1,24 @@
+"""
+This is the Buildbot custom settings file.
+"""
+
+from buildbot.plugins import *
+
+# This is for logging into the Web site.
+ADMINS = {
+    'username': 'password',
+    }
+
+BUILDERS = {
+    'test': ['plant'],
+    }
+
+BUILDBOT_URL = "http://147.75.56.225:8010/"
+
+DB_URL = "sqlite:///state.sqlite"
+
+WORKERS = [
+    worker.Worker('plant', 'secret'),
+    ]
+
+WWW_PORT = 8010
