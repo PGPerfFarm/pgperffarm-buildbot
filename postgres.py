@@ -18,12 +18,25 @@ PGINITDB = [
                 "%(prop:builddir)s/usr/bin:${PATH}")},
             haltOnFailure=True,
             ),
+        steps.ShellCommand(
+            name="Copy test specific GUCs",
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                        "cat "
+                        "%(prop:builddir)s/../guc/%(prop:buildername)s.$(git rev-parse --abbrev-ref HEAD).conf "
+                        " >> %(prop:builddir)s/pgdata/postgresql.auto.conf"
+                        ),
+                ],
+            haltOnFailure=True,
+            ),
         ]
 
 PGINSTALL = [
         steps.Git(
             name="Clone postgres",
             repourl='https://github.com/postgres/postgres.git',
+            branch='master',
             mode='full',
             method='fresh',
             haltOnFailure=True,
