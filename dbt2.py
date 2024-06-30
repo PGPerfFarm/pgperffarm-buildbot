@@ -7,6 +7,14 @@ from buildbot.plugins import steps, util
 import general
 import postgres
 
+CMD = "%(prop:builddir)s/../test/dbt2.conf | tail -n 1 | cut -d '=' -f 2"
+
+CONN_PER_PROC = f"$(( ($(grep -i ^connections {CMD}) - 1) / $(nproc) + 1 ))"
+CONNECTIONS = f"$(grep -i ^connections {CMD})"
+DURATION = f"$(grep -i ^duration {CMD})"
+RAMPUP = f"$(( ($(grep -i ^rampup {CMD}) / {CONNECTIONS} + 1) * 1000 ))"
+WAREHOUSES = f"$(grep -i ^warehouses {CMD})"
+
 DBT2STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \
         [steps.Git(
@@ -69,9 +77,8 @@ DBT2STEPS = general.CLEANUP + \
         [steps.ShellCommand(
             name="Build database",
             command=[
-                'dbt2', 'build',
-                '-w', '1',
-                'pgsql',
+                '/bin/sh', '-c',
+                util.Interpolate(f"dbt2 build -w {WAREHOUSES} pgsql"),
                 ],
             env={
                 'APPDIR': util.Interpolate("%(prop:builddir)s"),
@@ -84,12 +91,16 @@ DBT2STEPS = general.CLEANUP + \
         [steps.ShellCommand(
             name="Performance test",
             command=[
-                'dbt2', 'run',
-                '--stats',
-                '-w', '1',
-                '-d', '60',
-                'pgsql',
-                util.Interpolate("%(prop:builddir)s/results"),
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    f"dbt2 run --stats "
+                    f"--connection-delay {RAMPUP} "
+                    f"--connections-per-processor {CONN_PER_PROC} "
+                    f"--duration {DURATION} "
+                    f"--terminal-limit {CONNECTIONS} "
+                    f"--warehouses {WAREHOUSES} "
+                    "pgsql %(prop:builddir)s/results"
+                    ),
                 ],
             env={
                 'PATH': util.Interpolate("%(prop:builddir)s/usr/bin:${PATH}"),
