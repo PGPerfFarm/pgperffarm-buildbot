@@ -7,6 +7,13 @@ from buildbot.plugins import steps, util
 import general
 import postgres
 
+CMD = "%(prop:builddir)s/../test/dbt5.conf | tail -n 1 | cut -d '=' -f 2"
+
+CUSTOMERS = f"$(grep -i ^customers {CMD})"
+DURATION = f"$(grep -i ^duration {CMD})"
+USERS = f"$(grep -i ^users {CMD})"
+RAMPUP = f"$(( ($(grep -i ^rampup {CMD})  * 1000) / {USERS} ))"
+
 DBT5STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \
         [steps.Git(
@@ -59,12 +66,15 @@ DBT5STEPS = general.CLEANUP + \
         [steps.ShellCommand(
             name="Build database",
             command=[
-                'dbt5', 'build',
-                '-l', 'CUSTOM',
-                '-c', '1000',
-                '-t', '1000',
-                '--tpcetools', util.Interpolate("%(prop:builddir)s/../egen"),
-                'pgsql',
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt5 build "
+                    "-l CUSTOM "
+                    f"-c {CUSTOMERS} "
+                    f"-t {CUSTOMERS} "
+                    "--tpcetools=%(prop:builddir)s/../egen "
+                    "pgsql"
+                    ),
                 ],
             env={
                 'APPDIR': util.Interpolate("%(prop:builddir)s"),
@@ -104,15 +114,18 @@ DBT5STEPS = general.CLEANUP + \
         [steps.ShellCommand(
             name="Performance test",
             command=[
-                'dbt5', 'run',
-                '--stats',
-                '--tpcetools', util.Interpolate("%(prop:builddir)s/../egen"),
-                '-c', '1000',
-                '-t', '1000',
-                '-d', '60',
-                '-u', '1',
-                'pgsql',
-                util.Interpolate("%(prop:builddir)s/results"),
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt5 run "
+                    "--stats "
+                    "--tpcetools=%(prop:builddir)s/../egen "
+                    f"-c {CUSTOMERS} "
+                    f"-d {DURATION} "
+                    f"-s {RAMPUP} "
+                    f"-t {CUSTOMERS} "
+                    f"-u {USERS} "
+                    "pgsql %(prop:builddir)s/results"
+                    ),
                 ],
             timeout=None,
             env={
