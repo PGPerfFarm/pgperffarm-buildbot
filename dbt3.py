@@ -7,6 +7,10 @@ from buildbot.plugins import steps, util
 import general
 import postgres
 
+CMD = "%(prop:builddir)s/../test/dbt3.conf | tail -n 1 | cut -d '=' -f 2"
+
+SCALE = f"$(grep -i ^scale_factor {CMD})"
+
 DBT3STEPS = general.CLEANUP + \
         [steps.RemoveDirectory(
             name="Remove previous dbgen files",
@@ -69,15 +73,17 @@ DBT3STEPS = general.CLEANUP + \
         [steps.ShellCommand(
             name="Performance test",
             command=[
-                'dbt3', 'run',
-                util.Interpolate("--tpchtools=%(prop:builddir)s/../dbgen"),
-                '--stats',
-                '--explain',
-                util.Interpolate("--dss=%(prop:builddir)s/dss"),
-                '-f', '1',
-                '--relax',
-                'pgsql',
-                util.Interpolate("%(prop:builddir)s/results"),
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt3 run "
+                    "--dss=%(prop:builddir)s/dss "
+                    "--explain "
+                    "--relax "
+                    f"--scale-factor {SCALE} "
+                    "--stats "
+                    "--tpchtools=%(prop:builddir)s/../dbgen "
+                    "pgsql %(prop:builddir)s/results"
+                    )
                 ],
             timeout=None,
             env={
