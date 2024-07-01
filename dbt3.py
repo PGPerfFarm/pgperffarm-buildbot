@@ -11,7 +11,14 @@ CMD = "%(prop:builddir)s/../test/dbt3.conf | tail -n 1 | cut -d '=' -f 2"
 
 SCALE = f"$(grep -i ^scale_factor {CMD})"
 
-DBT3PROPERTIES = []
+DBT3PROPERTIES = [
+        util.IntParameter(
+            name="scale",
+            label="Scale Factor",
+            default=1,
+            required=True,
+            ),
+        ]
 
 DBT3STEPS = general.CLEANUP + \
         [steps.RemoveDirectory(
@@ -74,6 +81,7 @@ DBT3STEPS = general.CLEANUP + \
             )] + \
         [steps.ShellCommand(
             name="Performance test",
+            doStepIf=general.IsNotForceScheduler,
             command=[
                 '/bin/sh', '-c',
                 util.Interpolate(
@@ -82,6 +90,28 @@ DBT3STEPS = general.CLEANUP + \
                     "--explain "
                     "--relax "
                     f"--scale-factor {SCALE} "
+                    "--stats "
+                    "--tpchtools=%(prop:builddir)s/../dbgen "
+                    "pgsql %(prop:builddir)s/results"
+                    )
+                ],
+            timeout=None,
+            env={
+                'PATH': util.Interpolate("%(prop:builddir)s/usr/bin:${PATH}"),
+                'PGHOST': '/tmp',
+                },
+            )] + \
+        [steps.ShellCommand(
+            name="Performance test (force)",
+            doStepIf=general.IsForceScheduler,
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt3 run "
+                    "--dss=%(prop:builddir)s/dss "
+                    "--explain "
+                    "--relax "
+                    "--scale-factor %(prop:scale)s "
                     "--stats "
                     "--tpchtools=%(prop:builddir)s/../dbgen "
                     "pgsql %(prop:builddir)s/results"
