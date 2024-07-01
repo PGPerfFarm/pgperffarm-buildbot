@@ -15,6 +15,11 @@ PROPERTIES = [
             label="Upload PostgreSQL patch (must be base64 encoded)",
             default=""
             ),
+        util.FileParameter(
+            name="dbt.patch",
+            label="Upload DBT kit patch (must be base64 encoded)",
+            default=""
+            ),
         ]
 
 CLEANUP = [
@@ -34,6 +39,24 @@ CLEANUP = [
             name="Remove previous test installation",
             dir=util.Interpolate("%(prop:builddir)s/usr"),
             ),
+        ]
+
+PATCHDBT = [
+        steps.ShellCommand(
+            name="Apply DBT kit patch",
+            doStepIf=lambda step: step.build.getProperties(). \
+                    hasProperty("dbt.patch") and \
+                    step.build.getProperty("dbt.patch"),
+            command=[
+                'sh', '-c',
+                util.Interpolate(
+                    "echo \"%(prop:dbt.patch)s\" > ../dbt.patch && "
+                    "base64 -d ../dbt.patch | patch -p1"
+                    ),
+                ],
+            haltOnFailure=True,
+            workdir=util.Interpolate("%(prop:buildername)s"),
+            )
         ]
 
 STATS_SYSTEM = [
