@@ -11,7 +11,14 @@ CMD = "%(prop:builddir)s/../test/dbt7.conf | tail -n 1 | cut -d '=' -f 2"
 
 SCALE = f"$(grep -i ^scale_factor {CMD})"
 
-DBT7PROPERTIES = []
+DBT7PROPERTIES = [
+        util.IntParameter(
+            name="scale",
+            label="Scale Factor",
+            default=1,
+            required=True,
+            ),
+        ]
 
 DBT7STEPS = general.CLEANUP + \
         [steps.RemoveDirectory(
@@ -74,6 +81,7 @@ DBT7STEPS = general.CLEANUP + \
             )] + \
         [steps.ShellCommand(
             name="Performance test",
+            doStepIf=general.IsNotForceScheduler,
             command=[
                 '/bin/sh', '-c',
                 util.Interpolate(
@@ -82,6 +90,26 @@ DBT7STEPS = general.CLEANUP + \
                     "--stats "
                     "--tpcdstools=%(prop:builddir)s/../dsgen "
                     f"-s {SCALE} "
+                    "pgsql %(prop:builddir)s/results"
+                    ),
+                ],
+            timeout=None,
+            env={
+                'PATH': util.Interpolate("%(prop:builddir)s/usr/bin:${PATH}"),
+                'PGHOST': '/tmp',
+                },
+            )] + \
+        [steps.ShellCommand(
+            name="Performance test (force)",
+            doStepIf=general.IsForceScheduler,
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt7 run "
+                    "-d postgresqlea "
+                    "--stats "
+                    "--tpcdstools=%(prop:builddir)s/../dsgen "
+                    "-s %(prop:scale)s "
                     "pgsql %(prop:builddir)s/results"
                     ),
                 ],
