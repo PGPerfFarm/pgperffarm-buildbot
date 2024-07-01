@@ -15,7 +15,38 @@ DURATION = f"$(grep -i ^duration {CMD})"
 RAMPUP = f"$(( ($(grep -i ^rampup {CMD}) / {CONNECTIONS} + 1) * 1000 ))"
 WAREHOUSES = f"$(grep -i ^warehouses {CMD})"
 
-DBT2PROPERTIES = []
+DBT2PROPERTIES = [
+        util.IntParameter(
+            name="warehouses",
+            label="Warehouses",
+            default=1,
+            required=True,
+            ),
+        util.IntParameter(
+            name="duration",
+            label="Steady state duration in seconds",
+            default=120,
+            required=True,
+            ),
+        util.IntParameter(
+            name="connection_delay",
+            label="Seconds between opening database connections",
+            default=1,
+            required=True,
+            ),
+        util.IntParameter(
+            name="connections_per_processor",
+            label="Connections opened per processor",
+            default=1,
+            required=True,
+            ),
+        util.IntParameter(
+            name="terminal_limit",
+            label="Maximum number of database connections to open",
+            default=1000,
+            required=True,
+            ),
+        ]
 
 DBT2STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \
@@ -78,6 +109,7 @@ DBT2STEPS = general.CLEANUP + \
             )] + \
         [steps.ShellCommand(
             name="Build database",
+            doStepIf=general.IsNotForceScheduler,
             command=[
                 '/bin/sh', '-c',
                 util.Interpolate(f"dbt2 build -w {WAREHOUSES} pgsql"),
@@ -91,7 +123,23 @@ DBT2STEPS = general.CLEANUP + \
             haltOnFailure=True,
             )] + \
         [steps.ShellCommand(
+            name="Build database (force)",
+            doStepIf=general.IsForceScheduler,
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate("dbt2 build -w %(prop:warehouses)s pgsql"),
+                ],
+            env={
+                'APPDIR': util.Interpolate("%(prop:builddir)s"),
+                'PATH': util.Interpolate("%(prop:builddir)s/usr/bin:${PATH}"),
+                'PGDATABASE': 'postgres',
+                },
+            timeout=None,
+            haltOnFailure=True,
+            )] + \
+        [steps.ShellCommand(
             name="Performance test",
+            doStepIf=general.IsNotForceScheduler,
             command=[
                 '/bin/sh', '-c',
                 util.Interpolate(
@@ -101,6 +149,28 @@ DBT2STEPS = general.CLEANUP + \
                     f"--duration {DURATION} "
                     f"--terminal-limit {CONNECTIONS} "
                     f"--warehouses {WAREHOUSES} "
+                    "pgsql %(prop:builddir)s/results"
+                    ),
+                ],
+            env={
+                'PATH': util.Interpolate("%(prop:builddir)s/usr/bin:${PATH}"),
+                'PGHOST': '/tmp',
+                },
+            timeout=None,
+            haltOnFailure=True,
+            )] + \
+        [steps.ShellCommand(
+            name="Performance test (force)",
+            doStepIf=general.IsForceScheduler,
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt2 run --stats "
+                    "--connection-delay %(prop:connection_delay)s "
+                    "--connections-per-processor %(prop:connections_per_processor)s "
+                    "--duration %(prop:duration)s "
+                    "--terminal-limit %(prop:terminal_limit)s "
+                    "--warehouses %(prop:warehouses)s "
                     "pgsql %(prop:builddir)s/results"
                     ),
                 ],
