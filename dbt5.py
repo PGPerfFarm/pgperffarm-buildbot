@@ -14,7 +14,32 @@ DURATION = f"$(grep -i ^duration {CMD})"
 USERS = f"$(grep -i ^users {CMD})"
 RAMPUP = f"$(( ($(grep -i ^rampup {CMD})  * 1000) / {USERS} ))"
 
-DBT5PROPERTIES = []
+DBT5PROPERTIES = [
+        util.IntParameter(
+            name="customers",
+            label="Customers",
+            default=1000,
+            required=True,
+            ),
+        util.IntParameter(
+            name="duration",
+            label="Steady state duration in seconds",
+            default=120,
+            required=True,
+            ),
+        util.IntParameter(
+            name="connection_delay",
+            label="Seconds between starting users",
+            default=1,
+            required=True,
+            ),
+        util.IntParameter(
+            name="users",
+            label="Users",
+            default=1,
+            required=True,
+            ),
+        ]
 
 DBT5STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \
@@ -115,6 +140,7 @@ DBT5STEPS = general.CLEANUP + \
             )] + \
         [steps.ShellCommand(
             name="Performance test",
+            doStepIf=general.IsNotForceScheduler,
             command=[
                 '/bin/sh', '-c',
                 util.Interpolate(
@@ -126,6 +152,30 @@ DBT5STEPS = general.CLEANUP + \
                     f"-s {RAMPUP} "
                     f"-t {CUSTOMERS} "
                     f"-u {USERS} "
+                    "pgsql %(prop:builddir)s/results"
+                    ),
+                ],
+            timeout=None,
+            env={
+                'PATH': util.Interpolate("%(prop:builddir)s/usr/bin:${PATH}"),
+                'PGHOST': '/tmp',
+                 },
+            haltOnFailure=True,
+            )] + \
+        [steps.ShellCommand(
+            name="Performance test (force)",
+            doStepIf=general.IsForceScheduler,
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "dbt5 run "
+                    "--stats "
+                    "--tpcetools=%(prop:builddir)s/../egen "
+                    "-c %(prop:customers)s "
+                    "-d %(prop:duration)s "
+                    "-s %(prop:connection_delay)s "
+                    "-t %(prop:customers)s "
+                    "-u %(prop:users)s "
                     "pgsql %(prop:builddir)s/results"
                     ),
                 ],
