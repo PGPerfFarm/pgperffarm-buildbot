@@ -14,6 +14,8 @@ DURATION = f"$(grep -i ^duration {CMD})"
 USERS = f"$(grep -i ^users {CMD})"
 RAMPUP = f"$(( ($(grep -i ^rampup {CMD})  * 1000) / {USERS} ))"
 
+DBT5PROPERTIES = []
+
 DBT5STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \
         [steps.Git(

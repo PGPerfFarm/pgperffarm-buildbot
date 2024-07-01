@@ -11,6 +11,8 @@ CMD = "%(prop:builddir)s/../test/dbt3.conf | tail -n 1 | cut -d '=' -f 2"
 
 SCALE = f"$(grep -i ^scale_factor {CMD})"
 
+DBT3PROPERTIES = []
+
 DBT3STEPS = general.CLEANUP + \
         [steps.RemoveDirectory(
             name="Remove previous dbgen files",

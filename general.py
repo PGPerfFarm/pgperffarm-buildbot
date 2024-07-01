@@ -145,3 +145,17 @@ STATS_OLTP = [
             alwaysRun=True,
             ),
         ]
+
+def IsForceScheduler(step):
+    '''Check if the force scheduler was used, which uses a naming convention
+    that starts with run-'''
+    if step.getProperty("scheduler").startswith("run-"):
+        return True
+    return False
+
+def IsNotForceScheduler(step):
+    '''Check if the force scheduler was not used, which uses a naming
+    convention that starts with run-'''
+    if IsForceScheduler(step):
+        return False
+    return True

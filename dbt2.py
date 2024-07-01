@@ -15,6 +15,8 @@ DURATION = f"$(grep -i ^duration {CMD})"
 RAMPUP = f"$(( ($(grep -i ^rampup {CMD}) / {CONNECTIONS} + 1) * 1000 ))"
 WAREHOUSES = f"$(grep -i ^warehouses {CMD})"
 
+DBT2PROPERTIES = []
+
 DBT2STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \
         [steps.Git(

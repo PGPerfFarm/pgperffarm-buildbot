@@ -11,6 +11,8 @@ CMD = "%(prop:builddir)s/../test/dbt7.conf | tail -n 1 | cut -d '=' -f 2"
 
 SCALE = f"$(grep -i ^scale_factor {CMD})"
 
+DBT7PROPERTIES = []
+
 DBT7STEPS = general.CLEANUP + \
         [steps.RemoveDirectory(
             name="Remove previous dsgen files",
