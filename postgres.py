@@ -30,6 +30,20 @@ PGINITDB = [
                 ],
             haltOnFailure=True,
             ),
+        steps.ShellCommand(
+            name="Add custom GUC overrides",
+            doStepIf=lambda step: step.build.getProperties(). \
+                    hasProperty("custom_postgresql.conf") and \
+                    step.build.getProperty("custom_postgresql.conf"),
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                        "echo \"%(prop:custom_postgresql.conf)s\" "
+                        " >> %(prop:builddir)s/pgdata/postgresql.auto.conf"
+                        ),
+                ],
+            haltOnFailure=True,
+            ),
         ]
 
 PGINSTALL = [

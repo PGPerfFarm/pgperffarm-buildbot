@@ -46,7 +46,8 @@ DBT2PROPERTIES = [
             default=1000,
             required=True,
             ),
-        ]
+        ] + \
+        general.PROPERTIES
 
 DBT2STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \

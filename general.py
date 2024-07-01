@@ -4,6 +4,14 @@ These are common steps that any of tests may use.
 
 from buildbot.plugins import steps, util
 
+PROPERTIES = [
+        util.FileParameter(
+            name="custom_postgresql.conf",
+            label="Upload postgresql.conf overrides",
+            default=""
+            ),
+        ]
+
 CLEANUP = [
         steps.RemoveDirectory(
             name="Remove previous load logs",

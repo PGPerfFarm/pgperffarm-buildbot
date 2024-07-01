@@ -39,7 +39,8 @@ DBT5PROPERTIES = [
             default=1,
             required=True,
             ),
-        ]
+        ] + \
+        general.PROPERTIES
 
 DBT5STEPS = general.CLEANUP + \
         postgres.PGINSTALL + \

@@ -18,7 +18,8 @@ DBT3PROPERTIES = [
             default=1,
             required=True,
             ),
-        ]
+        ] + \
+        general.PROPERTIES
 
 DBT3STEPS = general.CLEANUP + \
         [steps.RemoveDirectory(
