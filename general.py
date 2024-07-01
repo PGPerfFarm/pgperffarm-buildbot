@@ -10,6 +10,11 @@ PROPERTIES = [
             label="Upload postgresql.conf overrides",
             default=""
             ),
+        util.FileParameter(
+            name="postgresql.patch",
+            label="Upload PostgreSQL patch (must be base64 encoded)",
+            default=""
+            ),
         ]
 
 CLEANUP = [

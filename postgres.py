@@ -55,6 +55,20 @@ PGINSTALL = [
             method='fresh',
             haltOnFailure=True,
             ),
+        steps.ShellCommand(
+            name="Apply PostgreSQL patch",
+            doStepIf=lambda step: step.build.getProperties(). \
+                    hasProperty("postgresql.patch") and \
+                    step.build.getProperty("postgresql.patch"),
+            command=[
+                '/bin/sh', '-c',
+                util.Interpolate(
+                    "echo \"%(prop:postgresql.patch)s\" > ../postgresql.patch && "
+                    "base64 -d ../postgresql.patch | patch -p1"
+                    ),
+                ],
+            haltOnFailure=True,
+            ),
         steps.Configure(
             name="Configure postgres",
             command=[
